@@ -581,7 +581,7 @@ def main():
         help=(
             "Granular per-service permission levels. Format: service:level. "
             "Example: --permissions gmail:organize drive:readonly. "
-            "Gmail levels: readonly, organize, drafts, send, full (cumulative). "
+            "Gmail levels: readonly, create_drafts, organize, drafts, send, full (cumulative; create_drafts can create drafts but cannot send). "
             "Other services: readonly, full. "
             "Join levels with '+' to grant only the scopes each named level adds "
             "(e.g. gmail:readonly+send). "

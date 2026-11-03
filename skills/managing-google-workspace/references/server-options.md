@@ -32,7 +32,7 @@ These mirror the MCP server's own flags. **Default setup**: use stdio transport 
 | `--permissions gmail:organize drive:readonly` | Per-service permission levels. Mutually exclusive with `--read-only` and `--tools` |
 | `--disabled-tools send_gmail_message` | Block individual tools by name. Composes with every option above |
 
-Gmail permission levels: `readonly`, `organize`, `drafts`, `send`, `full` (cumulative).
+Gmail permission levels: `readonly`, `create_drafts`, `organize`, `drafts`, `send`, `full` (cumulative). `create_drafts` adds `gmail.drafts.create`, which can create drafts but cannot send; `drafts` and above use `gmail.compose`, which can send.
 Tasks permission levels: `readonly`, `manage`, `full` (cumulative; `manage` allows create/update/move but excludes delete).
 Other services: `readonly`, `full`.
 

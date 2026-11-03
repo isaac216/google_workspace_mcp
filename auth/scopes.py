@@ -33,6 +33,8 @@ DOCS_WRITE_SCOPE = "https://www.googleapis.com/auth/documents"
 GMAIL_READONLY_SCOPE = "https://www.googleapis.com/auth/gmail.readonly"
 GMAIL_SEND_SCOPE = "https://www.googleapis.com/auth/gmail.send"
 GMAIL_COMPOSE_SCOPE = "https://www.googleapis.com/auth/gmail.compose"
+# Create drafts only; cannot send (listed as a sensitive scope in Google Auth Platform)
+GMAIL_DRAFTS_CREATE_SCOPE = "https://www.googleapis.com/auth/gmail.drafts.create"
 GMAIL_MODIFY_SCOPE = "https://www.googleapis.com/auth/gmail.modify"
 GMAIL_LABELS_SCOPE = "https://www.googleapis.com/auth/gmail.labels"
 GMAIL_SETTINGS_BASIC_SCOPE = "https://www.googleapis.com/auth/gmail.settings.basic"
@@ -96,8 +98,10 @@ SCOPE_HIERARCHY = {
         GMAIL_READONLY_SCOPE,
         GMAIL_SEND_SCOPE,
         GMAIL_COMPOSE_SCOPE,
+        GMAIL_DRAFTS_CREATE_SCOPE,
         GMAIL_LABELS_SCOPE,
     },
+    GMAIL_COMPOSE_SCOPE: {GMAIL_DRAFTS_CREATE_SCOPE},
     DRIVE_SCOPE: {DRIVE_READONLY_SCOPE, DRIVE_FILE_SCOPE},
     CALENDAR_SCOPE: {CALENDAR_READONLY_SCOPE, CALENDAR_EVENTS_SCOPE},
     DOCS_WRITE_SCOPE: {DOCS_READONLY_SCOPE},

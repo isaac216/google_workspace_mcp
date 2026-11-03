@@ -42,6 +42,7 @@ from auth.scopes import (
     GMAIL_READONLY_SCOPE,
     GMAIL_SEND_SCOPE,
     GMAIL_COMPOSE_SCOPE,
+    GMAIL_DRAFTS_CREATE_SCOPE,
     GMAIL_MODIFY_SCOPE,
     GMAIL_LABELS_SCOPE,
     GMAIL_SETTINGS_BASIC_SCOPE,
@@ -328,6 +329,29 @@ def _widen_drive_scope_for_dwd(scopes: List[str], tool_name: str) -> List[str]:
     return widened
 
 
+def _widen_gmail_drafts_scope_for_dwd(scopes: List[str], tool_name: str) -> List[str]:
+    """
+    Substitute gmail.compose for gmail.drafts.create in service-account mode.
+
+    The draft tool declares gmail.drafts.create so OAuth users can grant
+    draft-only access. A domain-wide-delegation token carries exactly the scopes
+    requested here, and existing Admin console DWD allowlists authorize
+    gmail.compose for drafting, so keep requesting that and leave those
+    deployments unchanged.
+    """
+    if GMAIL_DRAFTS_CREATE_SCOPE not in scopes:
+        return scopes
+
+    widened = [
+        GMAIL_COMPOSE_SCOPE if s == GMAIL_DRAFTS_CREATE_SCOPE else s for s in scopes
+    ]
+    logger.debug(
+        f"[{tool_name}] Service-account mode: requesting {GMAIL_COMPOSE_SCOPE} in place of "
+        f"{GMAIL_DRAFTS_CREATE_SCOPE} to match existing DWD scope allowlists."
+    )
+    return list(dict.fromkeys(widened))
+
+
 async def _authenticate_service(
     use_oauth21: bool,
     service_name: str,
@@ -368,7 +392,10 @@ async def _authenticate_service(
             target_email = principal
 
         credentials = _get_service_account_credentials(
-            _widen_drive_scope_for_dwd(resolved_scopes, tool_name), target_email
+            _widen_gmail_drafts_scope_for_dwd(
+                _widen_drive_scope_for_dwd(resolved_scopes, tool_name), tool_name
+            ),
+            target_email,
         )
         service = build_google_service(service_name, service_version, credentials)
         logger.info(
@@ -626,6 +653,7 @@ SCOPE_GROUPS = {
     "gmail_read": GMAIL_READONLY_SCOPE,
     "gmail_send": GMAIL_SEND_SCOPE,
     "gmail_compose": GMAIL_COMPOSE_SCOPE,
+    "gmail_drafts_create": GMAIL_DRAFTS_CREATE_SCOPE,
     "gmail_modify": GMAIL_MODIFY_SCOPE,
     "gmail_labels": GMAIL_LABELS_SCOPE,
     "gmail_settings_basic": GMAIL_SETTINGS_BASIC_SCOPE,

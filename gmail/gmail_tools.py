@@ -61,7 +61,7 @@ from core.utils import (
 from core.server import server
 from auth.scopes import (
     GMAIL_SEND_SCOPE,
-    GMAIL_COMPOSE_SCOPE,
+    GMAIL_DRAFTS_CREATE_SCOPE,
     GMAIL_MODIFY_SCOPE,
     GMAIL_LABELS_SCOPE,
     has_required_scopes,
@@ -3312,7 +3312,7 @@ async def _forward_gmail_message_impl(
     ),
 )
 @handle_http_errors("draft_gmail_message", service_type="gmail")
-@require_google_service("gmail", GMAIL_COMPOSE_SCOPE)
+@require_google_service("gmail", GMAIL_DRAFTS_CREATE_SCOPE)
 async def draft_gmail_message(
     service,
     user_google_email: str,

@@ -24,6 +24,7 @@ from auth.scopes import (
     GMAIL_LABELS_SCOPE,
     GMAIL_MODIFY_SCOPE,
     GMAIL_COMPOSE_SCOPE,
+    GMAIL_DRAFTS_CREATE_SCOPE,
     GMAIL_SEND_SCOPE,
     GMAIL_SETTINGS_BASIC_SCOPE,
     DRIVE_READONLY_SCOPE,
@@ -69,6 +70,7 @@ logger = logging.getLogger(__name__)
 SERVICE_PERMISSION_LEVELS: Dict[str, List[Tuple[str, List[str]]]] = {
     "gmail": [
         ("readonly", [GMAIL_READONLY_SCOPE]),
+        ("create_drafts", [GMAIL_DRAFTS_CREATE_SCOPE]),
         ("organize", [GMAIL_LABELS_SCOPE, GMAIL_MODIFY_SCOPE]),
         ("drafts", [GMAIL_COMPOSE_SCOPE]),
         ("send", [GMAIL_SEND_SCOPE]),
@@ -148,6 +150,28 @@ SERVICE_PERMISSION_LEVELS: Dict[str, List[Tuple[str, List[str]]]] = {
         ),
     ],
 }
+
+# Narrow scopes dropped from a request that already holds a broader scope
+# covering them, so adding a narrow level does not change what the existing
+# higher levels request from Google.
+_SUPERSEDED_BY: Dict[str, FrozenSet[str]] = {
+    GMAIL_DRAFTS_CREATE_SCOPE: frozenset({GMAIL_COMPOSE_SCOPE, GMAIL_MODIFY_SCOPE}),
+}
+
+# Tool filtering only: a granted broad scope also satisfies a tool that
+# declares the narrow one. gmail.modify is left out on purpose so the
+# "organize" level keeps excluding the draft tool, as before.
+_IMPLIED_FOR_TOOL_FILTERING: Dict[str, FrozenSet[str]] = {
+    GMAIL_COMPOSE_SCOPE: frozenset({GMAIL_DRAFTS_CREATE_SCOPE}),
+}
+
+
+def _drop_superseded(scopes: Iterable[str]) -> List[str]:
+    present = set(scopes)
+    return sorted(
+        s for s in present if not (_SUPERSEDED_BY.get(s, frozenset()) & present)
+    )
+
 
 # Actions denied at specific permission levels.
 # Maps service -> level -> frozenset of denied action names.
@@ -231,7 +255,7 @@ def get_scopes_for_permission(service: str, level: str) -> List[str]:
             f"Valid levels: {valid}"
         )
 
-    return sorted(set(cumulative))
+    return _drop_superseded(cumulative)
 
 
 def get_scopes_for_union(service: str, levels: Iterable[str]) -> List[str]:
@@ -251,7 +275,9 @@ def get_scopes_for_union(service: str, levels: Iterable[str]) -> List[str]:
             f"Valid levels: {list(additive_scopes)}"
         )
 
-    return sorted({scope for level in requested for scope in additive_scopes[level]})
+    return _drop_superseded(
+        scope for level in requested for scope in additive_scopes[level]
+    )
 
 
 def get_all_permission_scopes() -> List[str]:
@@ -277,7 +303,11 @@ def get_allowed_scopes_set() -> Optional[set[str]]:
     """
     if _PERMISSIONS is None:
         return None
-    return set(get_all_permission_scopes())
+    allowed = set(get_all_permission_scopes())
+    for broad, narrow in _IMPLIED_FOR_TOOL_FILTERING.items():
+        if broad in allowed:
+            allowed |= narrow
+    return allowed
 
 
 def get_valid_levels(service: str) -> List[str]:
